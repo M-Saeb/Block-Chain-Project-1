@@ -35,8 +35,8 @@ class Blockchain {
      */
     async initializeChain() {
         if( this.height === -1){
-            let block = new BlockClass.Block({data: 'Genesis Block'});
-            await this._addBlock(block);
+            let newBlock = new BlockClass.Block({data: 'Genesis Block'});
+            await this._addBlock(newBlock);
         }
     }
 
@@ -64,7 +64,17 @@ class Blockchain {
     _addBlock(block) {
         let self = this;
         return new Promise(async (resolve, reject) => {
-           
+            block.hash = SHA256(JSON.stringify(block)).toString()
+                if (self.chain.length > 0){
+                    block.previousBlockHash = self.chain[self.chain.length-1]
+                }
+                block.height = self.chain.length
+                block.time = new Date().getTime().toString().slice(0,-3)
+
+                self.chain.push(currentBlock)
+                self.chain += 1
+                resolve(block)
+                reject('something went wrong')            
         });
     }
 
@@ -78,7 +88,9 @@ class Blockchain {
      */
     requestMessageOwnershipVerification(address) {
         return new Promise((resolve) => {
-            
+            let message = `${address}:${new Date().getTime().toString()
+                .slice(0,-3)}:starRegistery`
+            resolve(bitcoinMessage.sign(message))
         });
     }
 
@@ -102,7 +114,15 @@ class Blockchain {
     submitStar(address, message, signature, star) {
         let self = this;
         return new Promise(async (resolve, reject) => {
-            
+            let messageTime = parseInt(message.split(':')[1])
+            let currentTime = parseInt(new Date().getTime().toString().slice(0,-3))
+            if (messageTime - currentTime < 300000){
+                bitcoinMessage.verify(message, address, signature)
+                let newBlock = new BlockClass({data: message})
+                resolve(this._addBlock(newBlock))
+            }else{
+                resolve("something went wrong")
+            }
         });
     }
 

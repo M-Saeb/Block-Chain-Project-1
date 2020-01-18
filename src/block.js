@@ -46,10 +46,10 @@ class Block {
             
             // Returning the Block is valid
             
-            const previousHash = self.hash
-            const newHash = SHA256(JSON.stringify(self.data)).toString()
+            const currentHash = self.hash
+            const reHash = SHA256(JSON.stringify(self.data)).toString()
 
-            if (newHash === previousHash){
+            if (reHash === currentHash){
                 resolve(true)
             }else{
                 reject(false)
@@ -74,8 +74,15 @@ class Block {
 
         // Resolve with the data if the object isn't the Genesis block
         let self = this
-        const decodedBody = hex2ascii(JSON.parse(self.body))
-
+        return new Promise((resolve, reject) => {
+            const decodedBody = hex2ascii(JSON.parse(self.body))
+            if (self.previousBlockHash === null){
+                resolve(decodedBody)
+            }else{
+                reject("something when wrong")
+            }
+            
+        })
     }
 
 }
