@@ -39,16 +39,7 @@ class Blockchain {
             await this._addBlock(newBlock);
         }
     }
-
-    /**
-     * Utility method that return a Promise that will resolve with the height of the chain
-     */
-    getChainHeight() {
-        return new Promise((resolve, reject) => {
-            resolve(this.height);
-        });
-    }
-
+    
     /**
      * _addBlock(block) will store a block in the chain
      * @param {*} block 
@@ -61,22 +52,34 @@ class Blockchain {
      * Note: the symbol `_` in the method name indicates in the javascript convention 
      * that this method is a private method. 
      */
-    _addBlock(block) {
-        let self = this;
-        return new Promise(async (resolve, reject) => {
-            block.hash = SHA256(JSON.stringify(block)).toString()
-                if (self.chain.length > 0){
-                    block.previousBlockHash = self.chain[self.chain.length-1]
-                }
-                block.height = self.chain.length
-                block.time = new Date().getTime().toString().slice(0,-3)
 
-                self.chain.push(currentBlock)
-                self.chain += 1
-                resolve(block)
-                reject('something went wrong')            
+     _addBlock(block) {
+        let self = this
+        return new Promise(async (resolve, reject) => {
+            if (self.chain.length > 0){
+                block.previousBlockHash = self.chain[self.chain.length-1].hash
+            } 
+
+            block.height = self.chain.length
+            block.time = new Date().getTime().toString().slice(0,-3)
+            block.hash = SHA256(JSON.stringify(block)).toString()
+
+            self.chain.push(block)
+            self.height += 1
+
+            resolve(block)
+            reject('something went wrong')            
         });
     }
+    /**
+     * Utility method that return a Promise that will resolve with the height of the chain
+     */
+    getChainHeight() {
+        return new Promise((resolve, reject) => {
+            resolve(this.height);
+        });
+    }
+
 
     /**
      * The requestMessageOwnershipVerification(address) method
@@ -112,14 +115,14 @@ class Blockchain {
      * @param {*} star 
      */
     submitStar(address, message, signature, star) {
-        let self = this;
+        let self = this
         return new Promise(async (resolve, reject) => {
             let messageTime = parseInt(message.split(':')[1])
             let currentTime = parseInt(new Date().getTime().toString().slice(0,-3))
             if (messageTime - currentTime < 300000){
                 bitcoinMessage.verify(message, address, signature)
                 let newBlock = new BlockClass({data: message})
-                resolve(this._addBlock(newBlock))
+                resolve(self._addBlock(newBlock))
             }else{
                 resolve("something went wrong")
             }
@@ -133,12 +136,15 @@ class Blockchain {
      * @param {*} hash 
      */
     getBlockByHash(hash) {
-        let self = this;
+        let self = this
         return new Promise((resolve, reject) => {
            let searchedBlock = self.chain.find(b => b.hash === hash)
-           
-
-        });
+           if(searchedBlock){
+                resolve(searchedBlock);
+            } else {
+                reject('Block not found');
+            }
+    });
     }
 
     /**
@@ -147,13 +153,13 @@ class Blockchain {
      * @param {*} height 
      */
     getBlockByHeight(height) {
-        let self = this;
+        let self = this
         return new Promise((resolve, reject) => {
-            let block = self.chain.filter(b => b.height === height);
-            if(block){
-                resolve(block);
+            let searchedBlock = self.chain.find(b => b.height === height);
+            if(searchedBlock){
+                resolve(searchedBlock);
             } else {
-                reject('Hash not found');
+                reject('Block not found');
             }
         });
     }
@@ -179,13 +185,14 @@ class Blockchain {
      * 2. Each Block should check the with the previousBlockHash
      */
     validateChain() {
-        let self = this;
+        let self = this
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
-            for (let block of self.chain){
-                errorLog.push(block.validateChain())
+            for (let i=0; i < self.chain; i++){
+                if (self.chain[i].validate()) errorLog.push(i)
             }
-            resolve(errorLog)
+            if (errorLog.length > 0) resolve ("errors were found in blocks: " + errorLog)
+            reject ('no error were found')
         });
     }
 
