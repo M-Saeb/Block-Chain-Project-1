@@ -93,7 +93,7 @@ class Blockchain {
         return new Promise((resolve) => {
             let message = `${address}:${new Date().getTime().toString()
                 .slice(0,-3)}:starRegistery`
-            resolve(bitcoinMessage.sign(message))
+            resolve(message)
         });
     }
 
@@ -120,11 +120,12 @@ class Blockchain {
             let messageTime = parseInt(message.split(':')[1])
             let currentTime = parseInt(new Date().getTime().toString().slice(0,-3))
             if (messageTime - currentTime < 300000){
-                bitcoinMessage.verify(message, address, signature)
-                let newBlock = new BlockClass({data: message})
-                resolve(self._addBlock(newBlock))
+                 if (!bitcoinMessage.verify(message, address, signature)) reject("varifaction failed")
+                let newBlock = new BlockClass.Block({data: star})
+                self._addBlock(newBlock)
+                resolve(newBlock)
             }else{
-                resolve("something went wrong")
+                reject("something went wrong")
             }
         });
     }
@@ -172,9 +173,10 @@ class Blockchain {
      */
     getStarsByWalletAddress (address) {
         let self = this;
-        let stars = [];
         return new Promise((resolve, reject) => {
-            
+            let stars = self.chain.filter(block => block.body.find(address).toString())
+            if (stars !== []) resolve (stars)
+            reject ("starts were not found")
         });
     }
 
@@ -189,7 +191,7 @@ class Blockchain {
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
             for (let i=0; i < self.chain; i++){
-                if (self.chain[i].validate()) errorLog.push(i)
+                if (!self.chain[i].validate() || self.chain[i].previousBlockHash !== self.chain[i-1].hash) errorLog.push(i)
             }
             if (errorLog.length > 0) resolve ("errors were found in blocks: " + errorLog)
             reject ('no error were found')

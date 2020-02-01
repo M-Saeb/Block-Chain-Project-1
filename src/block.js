@@ -36,7 +36,7 @@ class Block {
      *  Note: to access the class values inside a Promise code you need to create an auxiliary value `let self = this;`
      */
     validate() {
-        let self = this
+        let block = this
         return new Promise((resolve, reject) => {
             // Save in auxiliary variable the current block hash
                                             
@@ -45,7 +45,6 @@ class Block {
             // Returning the Block is not valid
             
             // Returning the Block is valid
-            let block = self
             const currentHash = block.hash
             block.hash = null
             const reHash = SHA256(JSON.stringify(block)).toString()
