@@ -48,12 +48,10 @@ class Block {
             const currentHash = block.hash
             block.hash = null
             const reHash = SHA256(JSON.stringify(block)).toString()
+            block.hash = currentHash
 
-            if (reHash === currentHash){
-                resolve(true)
-            }else{
-                reject(false)
-            }
+            if (reHash === currentHash) resolve(true)
+            resolve(false)
 
         });
     }
@@ -76,15 +74,17 @@ class Block {
         let self = this
         return new Promise((resolve, reject) => {
             const decodedBody = hex2ascii(JSON.parse(self.body))
-            if (self.previousBlockHash === null){
+            if (self.previousBlockHash != null){
                 resolve(decodedBody)
             }else{
-                reject("something when wrong")
+                reject("something went wrong")
             }
             
         })
     }
 
 }
+let mine = new Block("hmmmm")
+console.log(mine.getBData())
 
 module.exports.Block = Block;                    // Exposing the Block class as a module

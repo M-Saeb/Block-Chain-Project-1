@@ -121,7 +121,7 @@ class Blockchain {
             let currentTime = parseInt(new Date().getTime().toString().slice(0,-3))
             if (messageTime - currentTime < 300000){
                  if (!bitcoinMessage.verify(message, address, signature)) reject("varifaction failed")
-                let newBlock = new BlockClass.Block({data: star})
+                let newBlock = new BlockClass.Block({owner:address ,data: star})
                 self._addBlock(newBlock)
                 resolve(newBlock)
             }else{
@@ -173,10 +173,15 @@ class Blockchain {
      */
     getStarsByWalletAddress (address) {
         let self = this;
+        let stars = []
         return new Promise((resolve, reject) => {
-            let stars = self.chain.filter(block => block.body.find(address).toString())
-            if (stars !== []) resolve (stars)
-            reject ("starts were not found")
+            for (let block of self.chain){
+                if (block.getBData().owner === address){
+                    stars.push(block.getBData().star)
+                }
+            }
+            if (stars !== []) resolve(stars)
+            reject("no stars were found")
         });
     }
 
@@ -191,7 +196,7 @@ class Blockchain {
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
             for (let i=0; i < self.chain; i++){
-                if (!self.chain[i].validate() || self.chain[i].previousBlockHash !== self.chain[i-1].hash) errorLog.push(i)
+                if (await !self.chain[i].validate() || self.chain[i].previousBlockHash !== self.chain[i-1].hash) errorLog.push(i)
             }
             if (errorLog.length > 0) resolve ("errors were found in blocks: " + errorLog)
             reject ('no error were found')
